@@ -361,6 +361,24 @@
             }
         }
 
+        // 채팅 데이터 추가 및 새로고침 방지
+        const chatForm = document.getElementById('chat-form');
+        const chatLog = document.getElementById('chat-log');
+
+        chatForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // 폼 제출 시 새로고침 방지
+            const message = chatForm.querySelector('input').value;
+            const chatMessageElement = document.createElement('div');
+            chatMessageElement.classList.add('chat-message');
+            chatMessageElement.innerHTML = `
+                <img src="${document.getElementById('profile-pic').src}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${document.getElementById('profile-pic').src}', '${document.getElementById('nickname').value}', '${document.getElementById('tier').value}')">
+                <div>${message}</div>
+            `;
+            chatLog.appendChild(chatMessageElement);
+            chatForm.querySelector('input').value = ''; // 입력란 비우기
+            chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
+        });
+
         // 프로필 모달 표시
         function showProfile(imgSrc, nickname, tier) {
             document.getElementById('modal-profile-pic').src = imgSrc;
