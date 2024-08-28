@@ -294,7 +294,7 @@
         // 게시물 작성 후 Firebase에 저장
         const postForm = document.getElementById('post-form');
         postForm.addEventListener('submit', function(event) {
-            event.preventDefault();
+            event.preventDefault(); // 새로고침 방지
             const title = postForm.querySelector('input').value;
             const content = postForm.querySelector('textarea').value;
             const profilePic = document.getElementById('profile-pic').src;
@@ -306,6 +306,10 @@
                 profilePic: profilePic,
                 nickname: nickname,
                 timestamp: Date.now()
+            }).then(() => {
+                console.log("게시물 저장 완료");
+            }).catch((error) => {
+                console.error("게시물 저장 실패:", error);
             });
 
             postForm.reset(); // 폼 리셋
@@ -334,7 +338,7 @@
         // 채팅 메시지 작성 후 Firebase에 저장
         const chatForm = document.getElementById('chat-form');
         chatForm.addEventListener('submit', function(event) {
-            event.preventDefault();
+            event.preventDefault(); // 새로고침 방지
             const message = chatForm.querySelector('input').value;
             const profilePic = document.getElementById('profile-pic').src;
             const nickname = document.getElementById('nickname').value;
@@ -347,6 +351,10 @@
                     tier: tier,
                     message: message,
                     timestamp: Date.now()
+                }).then(() => {
+                    console.log("채팅 메시지 저장 완료");
+                }).catch((error) => {
+                    console.error("채팅 메시지 저장 실패:", error);
                 });
                 chatForm.querySelector('input').value = ''; // 입력란 비우기
             }
