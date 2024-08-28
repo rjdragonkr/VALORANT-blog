@@ -300,7 +300,7 @@
                     if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
                         fileLink = `
                             <div class="attachment">
-                                <button onclick="toggleAttachment(this)">첨부 파일 보기</button>
+                                <button type="button" onclick="toggleAttachment(this)">첨부 파일 보기</button>
                                 <div class="attachment-content">
                                     ${file.type.startsWith('image/') ? `<img src="${reader.result}" alt="첨부 이미지">` : `<video controls><source src="${reader.result}" type="${file.type}">Your browser does not support the video tag.</video>`}
                                 </div>
@@ -368,15 +368,17 @@
         chatForm.addEventListener('submit', function(event) {
             event.preventDefault(); // 폼 제출 시 새로고침 방지
             const message = chatForm.querySelector('input').value;
-            const chatMessageElement = document.createElement('div');
-            chatMessageElement.classList.add('chat-message');
-            chatMessageElement.innerHTML = `
-                <img src="${document.getElementById('profile-pic').src}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${document.getElementById('profile-pic').src}', '${document.getElementById('nickname').value}', '${document.getElementById('tier').value}')">
-                <div>${message}</div>
-            `;
-            chatLog.appendChild(chatMessageElement);
-            chatForm.querySelector('input').value = ''; // 입력란 비우기
-            chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
+            if (message.trim() !== "") {
+                const chatMessageElement = document.createElement('div');
+                chatMessageElement.classList.add('chat-message');
+                chatMessageElement.innerHTML = `
+                    <img src="${document.getElementById('profile-pic').src}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${document.getElementById('profile-pic').src}', '${document.getElementById('nickname').value}', '${document.getElementById('tier').value}')">
+                    <div>${message}</div>
+                `;
+                chatLog.appendChild(chatMessageElement);
+                chatForm.querySelector('input').value = ''; // 입력란 비우기
+                chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
+            }
         });
 
         // 프로필 모달 표시
