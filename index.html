@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -175,7 +175,6 @@
     </style>
     <!-- Firebase SDK 추가 -->
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js"></script>
 </head>
 <body>
@@ -185,19 +184,8 @@
     </header>
 
     <div class="container">
-        <!-- 로그인 섹션 -->
-        <div class="section">
-            <h2>로그인</h2>
-            <form id="login-form">
-                <input type="email" id="email" placeholder="이메일" required>
-                <input type="password" id="password" placeholder="비밀번호" required>
-                <button type="submit">로그인</button>
-            </form>
-            <button onclick="logout()">로그아웃</button>
-        </div>
-
         <!-- 프로필 섹션 -->
-        <div class="section" id="profile-section" style="display:none;">
+        <div class="section" id="profile-section">
             <h2>플레이어 프로필</h2>
             <div class="profile">
                 <img src="profile.jpg" alt="프로필 사진" width="100" height="100" id="profile-pic">
@@ -261,87 +249,47 @@
 
         // Firebase 앱 초기화
         const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const database = firebase.database();
 
-        // 로그인
-        const loginForm = document.getElementById('login-form');
-        loginForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        // 로컬 스토리지에서 프로필 로드
+        function loadProfile() {
+            const profilePic = localStorage.getItem('profilePic');
+            const nickname = localStorage.getItem('nickname');
+            const tier = localStorage.getItem('tier');
 
-            auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    console.log('로그인 성공:', userCredential.user);
-                    loadProfile();
-                    document.getElementById('profile-section').style.display = 'block';
-                    loadPosts();  // 게시물 로드
-                    loadChatMessages();  // 채팅 메시지 로드
-                })
-                .catch((error) => {
-                    console.error('로그인 실패:', error);
-                });
-        });
-
-        // 로그아웃
-        function logout() {
-            auth.signOut()
-                .then(() => {
-                    console.log('로그아웃 성공');
-                    document.getElementById('profile-section').style.display = 'none';
-                })
-                .catch((error) => {
-                    console.error('로그아웃 실패:', error);
-                });
+            if (profilePic) {
+                document.getElementById('profile-pic').src = profilePic;
+            }
+            if (nickname) {
+                document.getElementById('nickname').value = nickname;
+            }
+            if (tier) {
+                document.getElementById('tier').value = tier;
+            }
         }
 
         // 프로필 저장 기능
         function saveProfile() {
-            const user = auth.currentUser;
-            if (user) {
-                const profilePicInput = document.getElementById('profile-pic-input');
-                const profilePic = document.getElementById('profile-pic');
-                const nickname = document.getElementById('nickname').value;
-                const tier = document.getElementById('tier').value;
+            const profilePicInput = document.getElementById('profile-pic-input');
+            const profilePic = document.getElementById('profile-pic');
+            const nickname = document.getElementById('nickname').value;
+            const tier = document.getElementById('tier').value;
 
-                const file = profilePicInput.files[0];
-                const reader = new FileReader();
+            const file = profilePicInput.files[0];
+            const reader = new FileReader();
 
-                reader.onloadend = function() {
-                    profilePic.src = reader.result;
-                    database.ref('users/' + user.uid + '/profile').set({
-                        profilePic: reader.result,
-                        nickname: nickname,
-                        tier: tier
-                    });
-                }
-
-                if (file) {
-                    reader.readAsDataURL(file);
-                } else {
-                    database.ref('users/' + user.uid + '/profile').set({
-                        profilePic: profilePic.src,
-                        nickname: nickname,
-                        tier: tier
-                    });
-                }
+            reader.onloadend = function() {
+                profilePic.src = reader.result;
+                localStorage.setItem('profilePic', reader.result); // 로컬 저장소에 저장
             }
-        }
 
-        // 프로필 로드
-        function loadProfile() {
-            const user = auth.currentUser;
-            if (user) {
-                database.ref('users/' + user.uid + '/profile').once('value').then((snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        document.getElementById('profile-pic').src = data.profilePic;
-                        document.getElementById('nickname').value = data.nickname;
-                        document.getElementById('tier').value = data.tier;
-                    }
-                });
+            if (file) {
+                reader.readAsDataURL(file);
             }
+
+            // 닉네임과 티어 업데이트
+            localStorage.setItem('nickname', nickname);
+            localStorage.setItem('tier', tier);
         }
 
         // 게시판 데이터베이스 참조
@@ -353,41 +301,36 @@
             event.preventDefault();
             const title = postForm.querySelector('input').value;
             const content = postForm.querySelector('textarea').value;
-            const user = auth.currentUser;
+            const profilePic = document.getElementById('profile-pic').src;
+            const nickname = document.getElementById('nickname').value;
 
-            if (user) {
-                database.ref('users/' + user.uid + '/profile').once('value').then((snapshot) => {
-                    const data = snapshot.val();
-                    postsRef.push({
-                        title: title,
-                        content: content,
-                        profilePic: data.profilePic,
-                        nickname: data.nickname,
-                        timestamp: Date.now()
-                    });
-                    postForm.reset(); // 폼 리셋
-                });
-            }
+            postsRef.push({
+                title: title,
+                content: content,
+                profilePic: profilePic,
+                nickname: nickname,
+                timestamp: Date.now()
+            });
+
+            postForm.reset(); // 폼 리셋
         });
 
-        // 게시물 로드 및 실시간 업데이트
-        function loadPosts() {
-            postsRef.on('child_added', function(snapshot) {
-                const postList = document.getElementById('post-list');
-                const data = snapshot.val();
-                const postElement = document.createElement('div');
-                postElement.classList.add('post');
-                postElement.innerHTML = `
-                    <h4>${data.title}</h4>
-                    <p>${data.content}</p>
-                    <div class="post-profile">
-                        <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40">
-                        <span>${data.nickname}</span>
-                    </div>
-                `;
-                postList.appendChild(postElement);
-            });
-        }
+        // 실시간으로 게시물 수신하여 표시
+        postsRef.on('child_added', function(snapshot) {
+            const postList = document.getElementById('post-list');
+            const data = snapshot.val();
+            const postElement = document.createElement('div');
+            postElement.classList.add('post');
+            postElement.innerHTML = `
+                <h4>${data.title}</h4>
+                <p>${data.content}</p>
+                <div class="post-profile">
+                    <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40">
+                    <span>${data.nickname}</span>
+                </div>
+            `;
+            postList.appendChild(postElement);
+        });
 
         // 채팅 데이터베이스 참조
         const chatRef = database.ref('chat');
@@ -397,38 +340,35 @@
         chatForm.addEventListener('submit', function(event) {
             event.preventDefault();
             const message = chatForm.querySelector('input').value;
-            const user = auth.currentUser;
+            const profilePic = document.getElementById('profile-pic').src;
+            const nickname = document.getElementById('nickname').value;
+            const tier = document.getElementById('tier').value;
 
-            if (user && message.trim() !== "") {
-                database.ref('users/' + user.uid + '/profile').once('value').then((snapshot) => {
-                    const data = snapshot.val();
-                    chatRef.push({
-                        profilePic: data.profilePic,
-                        nickname: data.nickname,
-                        tier: data.tier,
-                        message: message,
-                        timestamp: Date.now()
-                    });
-                    chatForm.querySelector('input').value = ''; // 입력란 비우기
+            if (message.trim() !== "") {
+                chatRef.push({
+                    profilePic: profilePic,
+                    nickname: nickname,
+                    tier: tier,
+                    message: message,
+                    timestamp: Date.now()
                 });
+                chatForm.querySelector('input').value = ''; // 입력란 비우기
             }
         });
 
-        // 채팅 메시지 로드 및 실시간 업데이트
-        function loadChatMessages() {
-            chatRef.on('child_added', function(snapshot) {
-                const chatLog = document.getElementById('chat-log');
-                const data = snapshot.val();
-                const chatMessageElement = document.createElement('div');
-                chatMessageElement.classList.add('chat-message');
-                chatMessageElement.innerHTML = `
-                    <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${data.profilePic}', '${data.nickname}', '${data.tier}')">
-                    <div>${data.message}</div>
-                `;
-                chatLog.appendChild(chatMessageElement);
-                chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
-            });
-        }
+        // 실시간으로 채팅 메시지를 수신하여 표시
+        chatRef.on('child_added', function(snapshot) {
+            const chatLog = document.getElementById('chat-log');
+            const data = snapshot.val();
+            const chatMessageElement = document.createElement('div');
+            chatMessageElement.classList.add('chat-message');
+            chatMessageElement.innerHTML = `
+                <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${data.profilePic}', '${data.nickname}', '${data.tier}')">
+                <div>${data.message}</div>
+            `;
+            chatLog.appendChild(chatMessageElement);
+            chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
+        });
 
         // 프로필 모달 표시
         function showProfile(imgSrc, nickname, tier) {
@@ -445,19 +385,10 @@
             document.getElementById('modal').style.display = 'none';
         }
 
-        // 인증 상태 확인
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                console.log('사용자 로그인 상태:', user);
-                loadProfile();
-                document.getElementById('profile-section').style.display = 'block';
-                loadPosts();  // 게시물 로드
-                loadChatMessages();  // 채팅 메시지 로드
-            } else {
-                console.log('사용자 로그아웃 상태');
-                document.getElementById('profile-section').style.display = 'none';
-            }
-        });
+        // 페이지 로드 시 프로필 정보 로드
+        window.onload = function() {
+            loadProfile();
+        };
     </script>
 </body>
 </html>
