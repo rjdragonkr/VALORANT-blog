@@ -294,6 +294,8 @@
                     console.log('로그인 성공:', userCredential.user);
                     loadProfile();
                     document.getElementById('profile-section').style.display = 'block';
+                    loadPosts();  // 게시물 로드
+                    loadChatMessages();  // 채팅 메시지 로드
                 })
                 .catch((error) => {
                     console.error('로그인 실패:', error);
@@ -387,21 +389,23 @@
         });
 
         // 게시물 로드 및 실시간 업데이트
-        postsRef.on('child_added', function(snapshot) {
-            const postList = document.getElementById('post-list');
-            const data = snapshot.val();
-            const postElement = document.createElement('div');
-            postElement.classList.add('post');
-            postElement.innerHTML = `
-                <h4>${data.title}</h4>
-                <p>${data.content}</p>
-                <div class="post-profile">
-                    <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40">
-                    <span>${data.nickname}</span>
-                </div>
-            `;
-            postList.appendChild(postElement);
-        });
+        function loadPosts() {
+            postsRef.on('child_added', function(snapshot) {
+                const postList = document.getElementById('post-list');
+                const data = snapshot.val();
+                const postElement = document.createElement('div');
+                postElement.classList.add('post');
+                postElement.innerHTML = `
+                    <h4>${data.title}</h4>
+                    <p>${data.content}</p>
+                    <div class="post-profile">
+                        <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40">
+                        <span>${data.nickname}</span>
+                    </div>
+                `;
+                postList.appendChild(postElement);
+            });
+        }
 
         // 채팅 데이터베이스 참조
         const chatRef = database.ref('chat');
@@ -429,18 +433,20 @@
         });
 
         // 채팅 메시지 로드 및 실시간 업데이트
-        chatRef.on('child_added', function(snapshot) {
-            const chatLog = document.getElementById('chat-log');
-            const data = snapshot.val();
-            const chatMessageElement = document.createElement('div');
-            chatMessageElement.classList.add('chat-message');
-            chatMessageElement.innerHTML = `
-                <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${data.profilePic}', '${data.nickname}', '${data.tier}')">
-                <div>${data.message}</div>
-            `;
-            chatLog.appendChild(chatMessageElement);
-            chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
-        });
+        function loadChatMessages() {
+            chatRef.on('child_added', function(snapshot) {
+                const chatLog = document.getElementById('chat-log');
+                const data = snapshot.val();
+                const chatMessageElement = document.createElement('div');
+                chatMessageElement.classList.add('chat-message');
+                chatMessageElement.innerHTML = `
+                    <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${data.profilePic}', '${data.nickname}', '${data.tier}')">
+                    <div>${data.message}</div>
+                `;
+                chatLog.appendChild(chatMessageElement);
+                chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
+            });
+        }
 
         // 프로필 모달 표시
         function showProfile(imgSrc, nickname, tier) {
@@ -463,6 +469,8 @@
                 console.log('사용자 로그인 상태:', user);
                 loadProfile();
                 document.getElementById('profile-section').style.display = 'block';
+                loadPosts();  // 게시물 로드
+                loadChatMessages();  // 채팅 메시지 로드
             } else {
                 console.log('사용자 로그아웃 상태');
                 document.getElementById('profile-section').style.display = 'none';
