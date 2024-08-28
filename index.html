@@ -212,7 +212,7 @@
                         <input type="file" id="profile-pic-input" accept="image/*">
                         <input type="text" id="nickname" value="YourNickname" placeholder="닉네임">
                         <input type="text" id="tier" value="YourTier" placeholder="티어">
-                        <button type="button" onclick="updateProfile()">프로필 수정</button>
+                        <button type="button" onclick="saveProfile()">프로필 저장</button>
                     </form>
                 </div>
             </div>
@@ -269,32 +269,30 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 프로필 업데이트 기능
-        function updateProfile() {
+        // 프로필 저장 기능
+        function saveProfile() {
             const profilePicInput = document.getElementById('profile-pic-input');
             const profilePic = document.getElementById('profile-pic');
             const nickname = document.getElementById('nickname').value;
             const tier = document.getElementById('tier').value;
 
-            // 프로필 사진 업데이트
             const file = profilePicInput.files[0];
             const reader = new FileReader();
 
             reader.onloadend = function() {
                 profilePic.src = reader.result;
-                localStorage.setItem('profilePic', reader.result); // 로컬 저장소에 저장
+                localStorage.setItem('profilePic', reader.result); // 프로필 사진 저장
             }
 
             if (file) {
                 reader.readAsDataURL(file);
             }
 
-            // 닉네임과 티어 업데이트
-            localStorage.setItem('nickname', nickname);
-            localStorage.setItem('tier', tier);
+            localStorage.setItem('nickname', nickname); // 닉네임 저장
+            localStorage.setItem('tier', tier); // 티어 저장
         }
 
-        // 로컬 저장소에서 프로필 불러오기
+        // 로컬 스토리지에서 프로필 로드
         window.onload = function() {
             const profilePic = localStorage.getItem('profilePic');
             const nickname = localStorage.getItem('nickname');
@@ -309,6 +307,9 @@
             if (tier) {
                 document.getElementById('tier').value = tier;
             }
+
+            loadPosts();  // 게시물 로드
+            loadChatMessages();  // 채팅 메시지 로드
         };
 
         // 게시판 데이터베이스 참조
@@ -334,27 +335,29 @@
             postForm.reset(); // 폼 리셋
         });
 
-        // 실시간으로 게시물 수신하여 표시
-        postsRef.on('child_added', function(snapshot) {
-            const postList = document.getElementById('post-list');
-            const data = snapshot.val();
-            const postElement = document.createElement('div');
-            postElement.classList.add('post');
-            postElement.innerHTML = `
-                <h4>${data.title}</h4>
-                <p>${data.content}</p>
-                <div class="post-profile">
-                    <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40">
-                    <span>${data.nickname}</span>
-                </div>
-            `;
-            postList.appendChild(postElement);
-        });
+        // 게시물 로드 및 실시간 업데이트
+        function loadPosts() {
+            postsRef.on('child_added', function(snapshot) {
+                const postList = document.getElementById('post-list');
+                const data = snapshot.val();
+                const postElement = document.createElement('div');
+                postElement.classList.add('post');
+                postElement.innerHTML = `
+                    <h4>${data.title}</h4>
+                    <p>${data.content}</p>
+                    <div class="post-profile">
+                        <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40">
+                        <span>${data.nickname}</span>
+                    </div>
+                `;
+                postList.appendChild(postElement);
+            });
+        }
 
         // 채팅 데이터베이스 참조
         const chatRef = database.ref('chat');
 
-        // 채팅 메시지를 데이터베이스에 추가하는 함수
+        // 채팅 메시지 작성 후 Firebase에 저장
         const chatForm = document.getElementById('chat-form');
         chatForm.addEventListener('submit', function(event) {
             event.preventDefault();
@@ -375,19 +378,21 @@
             }
         });
 
-        // 실시간으로 채팅 메시지를 수신하여 표시하는 함수
-        chatRef.on('child_added', function(snapshot) {
-            const chatLog = document.getElementById('chat-log');
-            const data = snapshot.val();
-            const chatMessageElement = document.createElement('div');
-            chatMessageElement.classList.add('chat-message');
-            chatMessageElement.innerHTML = `
-                <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${data.profilePic}', '${data.nickname}', '${data.tier}')">
-                <div>${data.message}</div>
-            `;
-            chatLog.appendChild(chatMessageElement);
-            chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
-        });
+        // 채팅 메시지 로드 및 실시간 업데이트
+        function loadChatMessages() {
+            chatRef.on('child_added', function(snapshot) {
+                const chatLog = document.getElementById('chat-log');
+                const data = snapshot.val();
+                const chatMessageElement = document.createElement('div');
+                chatMessageElement.classList.add('chat-message');
+                chatMessageElement.innerHTML = `
+                    <img src="${data.profilePic}" alt="프로필 사진" width="40" height="40" onclick="showProfile('${data.profilePic}', '${data.nickname}', '${data.tier}')">
+                    <div>${data.message}</div>
+                `;
+                chatLog.appendChild(chatMessageElement);
+                chatLog.scrollTop = chatLog.scrollHeight; // 최신 메시지로 스크롤
+            });
+        }
 
         // 프로필 모달 표시
         function showProfile(imgSrc, nickname, tier) {
